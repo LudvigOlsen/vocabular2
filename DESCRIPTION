@@ -1,0 +1,20 @@
+Package: vocabular2
+Title: Document Vocabulary Comparison
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "Ludvig Renbo",
+           family = "Olsen",
+           role = c("aut", "cre"),
+           email = "r-pkgs@ludvigolsen.dk")
+Description: Compare document vocabularies.
+License: GPL-3
+URL: https://github.com/ludvigolsen/vocabular2
+BugReports: https://github.com/ludvigolsen/vocabular2/issues
+Imports: 
+    
+Suggests: 
+    testthat
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.0.2

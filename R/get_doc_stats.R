@@ -1,0 +1,18 @@
+get_doc_stats <- function(word_scores, doc, remove_zero_counts = TRUE){
+  # Get relevant columns
+  doc_cols <- word_scores[,c("Word", "in_n_docs", "idf", doc,
+                             paste0(doc, "_", c("Count","Freq","WeightedFreq")))]
+  # Unnest the metrics
+  doc_cols <- doc_cols %>% tidyr::unnest(cols = doc)
+  # Clean up the column names
+  colnames(doc_cols) <- stringr::str_replace_all(colnames(doc_cols),
+                                                 paste0(doc,"_"), "")
+  # Add the document name
+  doc_cols <- tibble::add_column(doc_cols, Doc = doc, .before = "Word")
+
+  # Remove rows where Count is 0
+  if (isTRUE(remove_zero_counts))
+    doc_cols <- doc_cols[doc_cols[["Count"]] > 0,]
+
+  doc_cols
+}

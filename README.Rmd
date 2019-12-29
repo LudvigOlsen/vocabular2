@@ -1,0 +1,43 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# vocabular2
+
+<!-- badges: start -->
+[![Lifecycle: experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
+<!-- [![CRAN status](https://www.r-pkg.org/badges/version/vocabr)](https://CRAN.R-project.org/package=vocabr) -->
+<!-- badges: end -->
+
+The goal of vocabular2 is to compare vocabularies on a set of metrics. 
+There's currently no clear development path for the package.
+
+## Installation
+
+You can install the development version with:
+
+``` r
+devtools::install_github("ludvigolsen/vocabular2")
+```
+
+## Example
+
+This is a basic example which shows you how to solve a common problem:
+
+```{r example}
+library(vocabular2)
+## basic example code
+```
+
+
