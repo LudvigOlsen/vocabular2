@@ -1,10 +1,24 @@
 # TODO Rename Condition to Document
 
 # tc_dfs: List of Term Counts data frame
+#' @title Compare vocabularies
+#' @param tc_dfs Named list of Term Counts data frames.
+#'
+#'  Each data frame must contain a column with the words and a column with their counts.
+#'
+#'  Each document must be uniquely named.
+#' @param weighting_fn Function for weighting the count column before normalizing to frequency.
+#'  The metrics using the weighting function will be named with a "_weighted" suffix.
+#'
+#'  NOTE: This is experimental. The metrics have not been thought through and some may not be meaningful.
+#' @keywords internal
+#' @importFrom dplyr %>%
+#' @import data.table
 compare_vocabs <- function(tc_dfs,
                            word_col = "Word",
                            counts_col = "Count",
                            weighting_fn = function(x){log(x+1)},
+                           rel_tf_nrtf_beta = 1,
                            zero_negatives = TRUE){
 
   #### Check and prepare inputs ####
@@ -35,8 +49,14 @@ compare_vocabs <- function(tc_dfs,
   term_counts[is.na(term_counts)] <- 0
 
   # Separate the counts and word columns
-  counts <- term_counts[, conditions]
-  words <- term_counts[, word_col]
+  counts <- base_select(term_counts, conditions)
+  words <- base_select(term_counts, word_col)
+
+  # Document counts
+  # list with two elements
+  #   'contains' is a one hot - word in doc?
+  #   'counts' are rowsums of 'contains'
+  doc_counts <- document_count(counts)
 
   # In case we don't wan't to weight the counts
   if (is.null(weighting_fn))
@@ -54,153 +74,60 @@ compare_vocabs <- function(tc_dfs,
   weighted_freqs <- weighted_counts %>%
     dplyr::mutate_all(.funs = list(normalize))
 
-  #### Calculate parts for the metrics ####
+  # Calculate epsilons (1/sum(counts_rest))
+  # These are used to add +1 smoothing in some metrics
+  epsilons <- sum_rest_populations(counts) %>%
+    dplyr::summarise_all(.f = list(function(x) {
+      1 / sum(x)
+    }))
 
-  # For each condition, compute the
-  # row sum of the other conditions
-  sum_rest <- sum_rest_populations(freqs, conditions)
-  sum_weighted_rest <- sum_rest_populations(weighted_freqs, conditions)
-
-  # Normalize row sums
-  # As each column sums to one, the row sums will sum to the number of columns in "rest"
-  normalized_rest <- sum_rest / (ncol(freqs)-1)
-  normalized_weighted_rest <- sum_weighted_rest / (ncol(weighted_freqs)-1)
-
-  ## Inverse Document Frequencies
-
-  # Unary - Is the word in the condition?
-  unary_doc_freqs <- counts
-  unary_doc_freqs[unary_doc_freqs > 0] <- 1
-  unary_scores <- tibble::enframe(rowSums(unary_doc_freqs),
-                                  name = NULL, value = "in_n_docs")
-
-  # log of num docs divided by number of docs with the word (+1 to avoid /0)
-  calculate_idf <- function(n_conditions, unary_scores){
-    log(n_conditions / (1 + unary_scores))
-  }
-  idf <- calculate_idf(length(conditions), unary_scores) %>%
-    dplyr::as_tibble()
-  colnames(idf) <- "idf"
-
-  # Inverse Rest Frequencies
-
-  # Get unary score of rest for each condition
-  unary_scores_rest <- sum_rest_populations(unary_doc_freqs,
-                                            conditions = conditions)
-  # For each condition,
-  #   log of num rest divided by number of rest with the word (+1 to avoid /0)
-  irfs <- calculate_idf(length(conditions)-1, unary_scores_rest)
-
-  #### Ensure column orders ####
-
-  # Ensure column orders are the same
-  # (they should already be so, but this vital when we subtract the two dfs)
-  counts <- ensure_col_order(counts, conditions)
-  freqs <- ensure_col_order(freqs, conditions)
-  weighted_freqs <- ensure_col_order(weighted_freqs, conditions)
-  sum_rest <- ensure_col_order(sum_rest, conditions)
-  sum_weighted_rest <- ensure_col_order(sum_weighted_rest, conditions)
-  normalized_rest <- ensure_col_order(normalized_rest, conditions)
-  normalized_weighted_rest <- ensure_col_order(normalized_weighted_rest, conditions)
-  irfs <- ensure_col_order(irfs, conditions)
+  # Weight the epsilons
+  weighted_epsilons <- epsilons %>%
+    dplyr::mutate_all(.funs = list(weighting_fn))
 
   #### Calculate metrics ####
 
-  # Subtract the population sum freqs from the condition freqs
-  # This will be positive if the normalized term frequency is larger
-  # than the sum of the normalized term frequency in all other conditions
-  tf_rtf_scores <- freqs - sum_rest
-  wtf_rwtf_scores <- weighted_freqs - sum_weighted_rest
+  metrics <- calculate_metrics(
+    counts = counts,
+    freqs = freqs,
+    doc_counts = doc_counts,
+    epsilons = epsilons,
+    rel_tf_nrtf_beta = rel_tf_nrtf_beta,
+    zero_negatives = zero_negatives
+  )
+  idf <- metrics[["idf"]]
+  metrics[["idf"]] <- NULL
 
-  # Subtract the population normalized freqs from the condition freqs
-  # This will be positive if the term frequency is larger
-  # than the mean of the term frequency in all other conditions
-  tf_nrtf_scores <- freqs - normalized_rest
-  wtf_nrwtf_scores <- weighted_freqs - normalized_weighted_rest
+  weighted_metrics <- calculate_metrics(
+    counts = weighted_counts,
+    freqs = weighted_freqs,
+    doc_counts = doc_counts,
+    epsilons = weighted_epsilons,
+    rel_tf_nrtf_beta = rel_tf_nrtf_beta,
+    zero_negatives = zero_negatives,
+    metric_suffix = "_weighted"
+  )
+  weighted_metrics[["idf"]] <- NULL
+  weighted_metrics[["irf"]] <- NULL
 
-  # Term frequency * log inverse document frequency
-  tf_idf_scores <- dplyr::mutate_all(freqs, list(function(x){x * idf[["idf"]]}))
-  wtf_idf_scores <- dplyr::mutate_all(weighted_freqs, list(function(x){x * idf[["idf"]]}))
-  # Term frequency * log inverse rest frequency
-  tf_irf_scores <- freqs * irfs
-  wtf_irf_scores <- weighted_freqs * irfs
-
-  # Ensemble Rank scores
-  # Rank the words on each score and find the words
-  # that are important in most scores
-  # Perhaps set an option to weight the metrics?
-
-  # For each metric, find ranks
-  # TODO Consider changing to frank in data.table for speed
-
-  # Note: highest score -> highest rank number
-  calculate_rank <- function(scores){
-    scores %>%
-      dplyr::mutate_all(list(rank))
-  }
-
-  # Find ranks for each metric
-  tf_rtf_ranks <- calculate_rank(tf_rtf_scores)
-  tf_nrtf_ranks <- calculate_rank(tf_nrtf_scores)
-  tf_irf_ranks <- calculate_rank(tf_irf_scores)
-  wtf_rwtf_ranks <- calculate_rank(wtf_rwtf_scores)
-  wtf_nrwtf_ranks <- calculate_rank(wtf_nrwtf_scores)
-  wtf_irf_ranks <- calculate_rank(wtf_irf_scores)
-
-  # Add rank dfs together
-  nonweighted_rank_sums <- tf_rtf_ranks + tf_nrtf_ranks + tf_irf_ranks
-  weighted_rank_sums <- wtf_rwtf_ranks + wtf_nrwtf_ranks + wtf_irf_ranks
-  overall_rank_sums <- nonweighted_rank_sums + weighted_rank_sums
-
-  # Calculate
-  nonweighted_ensemble_ranks <- calculate_rank(nonweighted_rank_sums)
-  weighted_ensemble_ranks <- calculate_rank(weighted_rank_sums)
-  overall_ensemble_ranks <- calculate_rank(overall_rank_sums)
-
-  # Set negative uniquess scores to zero
-  if (isTRUE(zero_negatives)){
-    tf_rtf_scores[tf_rtf_scores < 0] <- 0
-    wtf_rwtf_scores[wtf_rwtf_scores < 0] <- 0
-    tf_nrtf_scores[tf_nrtf_scores < 0] <- 0
-    wtf_nrwtf_scores[wtf_nrwtf_scores < 0] <- 0
-  }
+  metrics <- dplyr::bind_cols(
+    c(
+    metrics,
+    weighted_metrics
+    )
+  )
 
   #### Prepare output ####
 
   # Rename columns
-  colnames(counts) <- paste0(colnames(counts), "_Count")
-  colnames(freqs) <- paste0(colnames(freqs), "_Freq")
-  colnames(weighted_freqs) <- paste0(colnames(weighted_freqs), "_WeightedFreq")
-  colnames(tf_rtf_scores) <- paste0(colnames(tf_rtf_scores), "_tf_rtf")
-  colnames(wtf_rwtf_scores) <- paste0(colnames(wtf_rwtf_scores), "_wtf_rwtf")
-  colnames(tf_nrtf_scores) <- paste0(colnames(tf_nrtf_scores), "_tf_nrtf")
-  colnames(wtf_nrwtf_scores) <- paste0(colnames(wtf_nrwtf_scores), "_wtf_nrwtf")
-  colnames(tf_idf_scores) <- paste0(colnames(tf_idf_scores), "_tf_idf")
-  colnames(tf_irf_scores) <- paste0(colnames(tf_irf_scores), "_tf_irf")
-  colnames(wtf_idf_scores) <- paste0(colnames(wtf_idf_scores), "_wtf_idf")
-  colnames(wtf_irf_scores) <- paste0(colnames(wtf_irf_scores), "_wtf_irf")
-  colnames(nonweighted_ensemble_ranks) <- paste0(colnames(nonweighted_ensemble_ranks), "_nwe_ranks")
-  colnames(weighted_ensemble_ranks) <- paste0(colnames(weighted_ensemble_ranks), "_we_ranks")
-  colnames(overall_ensemble_ranks) <- paste0(colnames(overall_ensemble_ranks), "_e_ranks")
-
-  # combine scores
-  metrics <- dplyr::bind_cols(
-    tf_rtf_scores,
-    tf_nrtf_scores,
-    wtf_rwtf_scores,
-    wtf_nrwtf_scores,
-    tf_idf_scores,
-    wtf_idf_scores,
-    tf_irf_scores,
-    wtf_irf_scores,
-    nonweighted_ensemble_ranks,
-    weighted_ensemble_ranks,
-    overall_ensemble_ranks
-  )
+  counts <- add_colnames_suffix(counts, "_Count")
+  freqs <- add_colnames_suffix(freqs, "_Freq")
+  weighted_freqs <- add_colnames_suffix(weighted_freqs, "_WeightedFreq")
 
   # Nest metrics by condition
   nested_metrics <- plyr::llply(conditions, function(cond){
-    metrics[,grepl(cond, colnames(metrics))] %>%
+    metrics %>%
+      base_select(cols = grepl(cond, colnames(metrics))) %>%
       nest_rowwise() %>%
       tibble::enframe(name=NULL, value=cond)
   }) %>% dplyr::bind_cols()
@@ -208,7 +135,7 @@ compare_vocabs <- function(tc_dfs,
   # Combine the computed columns
   dplyr::bind_cols(
     words,
-    unary_scores,
+    doc_counts[["counts"]],
     idf,
     nested_metrics,
     counts,

@@ -1,7 +1,10 @@
 get_doc_stats <- function(word_scores, doc, remove_zero_counts = TRUE){
   # Get relevant columns
-  doc_cols <- word_scores[,c("Word", "in_n_docs", "idf", doc,
-                             paste0(doc, "_", c("Count","Freq","WeightedFreq")))]
+  doc_cols <- word_scores %>%
+    base_select(cols = c(
+      "Word", "In Docs", "idf", doc,
+      paste0(doc, "_", c("Count", "Freq", "WeightedFreq"))))
+
   # Unnest the metrics
   doc_cols <- doc_cols %>% tidyr::unnest(cols = doc)
   # Clean up the column names

@@ -8,7 +8,7 @@ sum_rest_populations <- function(freqs_df){
   docs <- colnames(freqs_df)
   plyr::llply(docs, function(d){
     # Remove the column for current document
-    rest <- freqs_df[,setdiff(docs, d)]
+    rest <- base_deselect(freqs_df, cols = d)
     # Return row sums
     tibble::enframe(rowSums(rest), name=NULL, value=d)
   }) %>%

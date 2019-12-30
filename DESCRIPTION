@@ -11,7 +11,17 @@ License: GPL-3
 URL: https://github.com/ludvigolsen/vocabular2
 BugReports: https://github.com/ludvigolsen/vocabular2/issues
 Imports: 
-    
+    data.table (>= 1.12),
+    dplyr,
+    plyr,
+    tidyr (>= 0.8.3),
+    ggplot2,
+    purrr,
+    tibble (>= 2.1.1),
+    rlang (>= 0.4.0),
+    utils,
+    stringr,
+    lifecycle
 Suggests: 
     testthat
 Encoding: UTF-8
