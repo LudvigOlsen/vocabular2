@@ -57,8 +57,7 @@ calculate_metrics <- function(counts,
   # As each column sums to one, the row sums will sum to the number of columns in "rest"
   normalized_rest <- sum_rest / (ncol(freqs)-1)
 
-  # TODO: max_rest would be useful as well
-  # and could be used where normalized_rest would be used as well
+  # Max row frequency in rest
   max_rest <- max_rest_populations(freqs)
 
   ## Inverse Document Frequencies
@@ -68,10 +67,11 @@ calculate_metrics <- function(counts,
   irf <- calculate_irf(doc_contains)
 
   # Ensure column orders are the same
-  # (they should already be so, but this vital when we subtract the two dfs)
+  # (they should already be so, but this is vital when we subtract the two dfs)
   freqs <- ensure_col_order(freqs, doc_names)
   sum_rest <- ensure_col_order(sum_rest, doc_names)
   normalized_rest <- ensure_col_order(normalized_rest, doc_names)
+  max_rest <- ensure_col_order(max_rest, doc_names)
   irf <- ensure_col_order(irf, doc_names)
 
   #### Calculate metrics ####
@@ -86,19 +86,32 @@ calculate_metrics <- function(counts,
   # than the mean of the term frequency in all other conditions
   tf_nrtf_scores <- freqs - normalized_rest
 
+  # Subtract the population max freqs from the condition freqs
+  # This will be positive if the term frequency is larger
+  # than the maximum term frequency in all other conditions
+  tf_mrtf_scores <- freqs - max_rest
+
   # Divide the tf_nrtf (difference between freqs and normalized rest freqs)
   # with the normalized rest freqs
   # and multiply by term frequency
-  rel_tf_nrtf_scores <- calculate_rel_tf_nrtf(
+  rel_tf_nrtf_scores <- calculate_relative_score(
     freqs = freqs,
-    tf_nrtf = tf_nrtf_scores,
-    normalized_rest = normalized_rest,
+    difference = tf_nrtf_scores,
+    population = normalized_rest,
     epsilons = epsilons,
     log_denominator = TRUE,
     beta = rel_tf_nrtf_beta)
 
-  # Multiply the relative score with the absolute score
-  # This will ensure that term frequency actually matters as well?
+  # Divide the tf_mrtf (difference between freqs and max rest freqs)
+  # with the max rest freqs
+  # and multiply by term frequency
+  rel_tf_mrtf_scores <- calculate_relative_score(
+    freqs = freqs,
+    difference = tf_mrtf_scores,
+    population = max_rest,
+    epsilons = epsilons,
+    log_denominator = TRUE,
+    beta = rel_tf_nrtf_beta)
 
   # Term frequency * log inverse document frequency
   tf_idf_scores <- dplyr::mutate_all(freqs, list(function(x){x * idf[["idf"]]}))
@@ -123,7 +136,9 @@ calculate_metrics <- function(counts,
   output <- list(
     "tf_rtf" = add_colnames_suffix(tf_rtf_scores, "_TF_RTF"),
     "tf_nrtf" = add_colnames_suffix(tf_nrtf_scores, "_TF_NRTF"),
+    "tf_mrtf" = add_colnames_suffix(tf_mrtf_scores, "_TF_MRTF"),
     "rel_tf_nrtf" = add_colnames_suffix(rel_tf_nrtf_scores, "_REL_TF_NRTF"),
+    "rel_tf_mrtf" = add_colnames_suffix(rel_tf_mrtf_scores, "_REL_TF_MRTF"),
     "rank_ensemble" = add_colnames_suffix(rank_ensemble, "_RANK_ENS")
   )
 
@@ -197,28 +212,31 @@ calculate_rank <- function(scores){
 #   formula 1: (tf_nrtf / log(1 + normalized_rest + epsilon)) * (freqs^beta)
 #   formula 2: (tf_nrtf / (normalized_rest + epsilon)) * (freqs^beta)
 # Set beta to 0 to not multiply by freqs
-calculate_rel_tf_nrtf <- function(freqs,
-                                  tf_nrtf,
-                                  normalized_rest,
-                                  epsilons,
-                                  log_denominator = TRUE,
-                                  beta = 1) {
+# @param difference: like tf_nrtf (difference from population mean/max/...)
+# @param population: like normalized_rest (population mean/max/...)
+calculate_relative_score <- function(freqs,
+                                     difference,
+                                     population,
+                                     epsilons,
+                                     log_denominator = TRUE,
+                                     beta = 1) {
 
   # Add the epsilons
   epsilons <- epsilons %>%
-    dplyr::slice(rep(1, each=nrow(normalized_rest)))
-  normalized_rest <- normalized_rest + epsilons
+    dplyr::slice(rep(1, each=nrow(population)))
+  population <- population + epsilons
   # Ensure it's capped at 1
-  normalized_rest[normalized_rest > 1] <- 1
+  population[population > 1] <- 1
 
-  # Both tf_nrtf and normalized_rest are between 0 and 1
+  # Both difference and normalized_rest are between 0 and 1
 
   # Find relative difference between
-  # tf_nrtf and the normalized rest
+  # difference and the normalized rest
   if (isTRUE(log_denominator)){
-    rel <- tf_nrtf / log(1 + normalized_rest)
+    rel <- difference / log(1 + population)
+    # rel <- safe_division(difference, log(1 + population), na_fill = 0)
   } else {
-    rel <- tf_nrtf / normalized_rest
+    rel <- safe_division(difference, population, na_fill = 0)
   }
 
   rel*(freqs^beta)
