@@ -57,6 +57,10 @@ calculate_metrics <- function(counts,
   # As each column sums to one, the row sums will sum to the number of columns in "rest"
   normalized_rest <- sum_rest / (ncol(freqs)-1)
 
+  # TODO: max_rest would be useful as well
+  # and could be used where normalized_rest would be used as well
+  max_rest <- max_rest_populations(freqs)
+
   ## Inverse Document Frequencies
   idf <- calculate_idf(n_docs, doc_counts)
 
@@ -177,7 +181,7 @@ calculate_idf <- function(n_docs, doc_count, keep_col_names = FALSE){
 calculate_irf <- function(doc_contains){
   # Get doc counts for each rest population
   doc_count_rest <- sum_rest_populations(doc_contains)
-  calculate_idf(nrow(doc_contains)-1, doc_count_rest, keep_col_names = TRUE)
+  calculate_idf(ncol(doc_contains)-1, doc_count_rest, keep_col_names = TRUE)
 }
 
 # Note: highest score -> highest rank number

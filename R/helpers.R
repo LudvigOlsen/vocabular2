@@ -156,6 +156,7 @@ dmap <- function(ld, fn){
 #   best_10 <- doc_stats_depression[, c("Word", "TF_NRTF", "REL_TF_NRTF", "Count", "Freq")] %>% dplyr::arrange(desc(REL_TF_NRTF))
 #   best_10 <- best_10 %>% dplyr::left_join(vocab_uni[,c("Word", "Control_Freq", "Schizo_Freq")], by="Word")
 #   print(cor(doc_stats_depression$TF_NRTF, doc_stats_depression$REL_TF_NRTF))
+#   print(cor(doc_stats_depression$TF_NRTF, doc_stats_depression$REL_TF_NRTF,method = "spearman"))
 #   print(cor(rank(doc_stats_depression$TF_NRTF), rank(doc_stats_depression$REL_TF_NRTF)))
 #   print(mean(rank(doc_stats_depression$TF_NRTF) == rank(doc_stats_depression$REL_TF_NRTF)))
 #   best_10
