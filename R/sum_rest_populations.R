@@ -18,13 +18,6 @@ max_rest_populations <- function(freqs_df){
   })
 }
 
-# # Test sum_rest_populations
-# # Rows should be 110, 101, 11
-# tibble::tibble("a" = c(1,1,1),
-#                "b" = c(10,10,10),
-#                "c" = c(100,100,100)) %>%
-#   sum_rest_populations(c("a","b","c"))
-
 
 # rowwise summarization of rest populations
 summarize_rest_populations <- function(freqs_df, fn){
