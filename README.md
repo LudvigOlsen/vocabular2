@@ -196,10 +196,17 @@ get_doc_metrics(scores, "ophelia") %>%
 
 ### TF-IDF and TF-IRF (Term Frequency - Inverse Rest Frequency)
 
-These are highly correlated (\>0.999).
+These are highly correlated
+(\>0.999).
 
-\[ tf(t,d)=\frac{f_{t,d}}{\sum_{t'}^{d}f_{t',d}} \]
-\[ idf(t,D)=\log{\frac{|D|}{1+|\{d \in D:t \in d\}|}} \]
+<!--$$ tf(t,d)=\frac{f_{t,d}}{\sum_{t'}^{d}f_{t',d}} $$-->
+
+![equation](https://latex.codecogs.com/png.latex?%5Cdpi%7B120%7D%20%5Csmall%20tf%28t%2Cd%29%3D%5Cfrac%7Bf_%7Bt%2Cd%7D%7D%7B%5Csum_%7Bt%27%7D%5E%7Bd%7Df_%7Bt%27%2Cd%7D%7D)
+
+<!--$$ idf(t,D)=\log{\frac{|D|}{1+|\{d \in D:t \in d\}|}} $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20idf%28t%2CD%29%3D%5Clog%7B%5Cfrac%7B%7CD%7C%7D%7B1+%7C%7Bd%20%5Cin%20D%3At%20%5Cin%20d%7D%7C%7D%7D)
+
 \[ irf(t,d,D)=\log{\frac{|D|-1}{1+|\{d \in D:t \in d \land d' \not = d \}|}} \]
 \[ tfidf(t,d,D) = tf(t,d) \cdot idf(t,D) \]
 \[ tfirf(t,d,D) = tf(t,d) \cdot irf(t,d,D) \]
