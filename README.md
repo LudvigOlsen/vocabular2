@@ -293,6 +293,10 @@ document-wise, the NRTF (Normalized Rest Term Frequency) is simply the
 average term frequency in the other documents, instead of the sum as in
 RTF.
 
+TF-NRTF is positive when the term frequency is higher in the current
+document than the average term frequency in the rest of the
+corpus.
+
 <!--$$ nrtf(t,d,D) = \frac{rtf(t,d,D)}{|D|-1} $$-->
 
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20nrtf%28t%2Cd%2CD%29%20%3D%20%5Cfrac%7Brtf%28t%2Cd%2CD%29%7D%7B%7CD%7C-1%7D)
@@ -304,8 +308,11 @@ RTF.
 ### TF-MRTF (Term Frequency - Maximum Rest Term Frequency)
 
 Instead of the normalized/average rest term frequency, we instead use
-the maximum rest term
-frequency.
+the maximum rest term frequency.
+
+TF-MRTF is positive when the term frequency is higher in the current
+document than the maximum term frequency in the rest of the
+corpus.
 
 <!--$$ Mrtf(t,d,D) = \max{\{tf(t,d'):d' \in D \land d' \not = d\}} $$-->
 
@@ -315,7 +322,13 @@ frequency.
 
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfMrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29-Mrtf%28t%2Cd%2CD%29)
 
-### Rel TF-NRTF (Relative Term Frequency - Normalized Rest Term Frequency)
+### Relative TF-NRTF (Relative Term Frequency - Normalized Rest Term Frequency)
+
+Where the TF-NRTF tend to be dominated by highly frequent words, the
+Relative TF-NRTF instead uses the relative distance to the NRTF. As that
+would likely be dominated by very infrequent words, we multiply it by
+the term
+frequency.
 
 <!--$$ \epsilon(t,d,D) = \frac{1}{\sum_{d' \not = d}^{D}f_{t,d'}} $$-->
 
@@ -329,10 +342,14 @@ Epsilon (ε) is added to avoid zero-division. It is calculated to
 resemble +1 smoothing in the rest population.
 
 The beta (β) exponentiator allows us to control the influence of the
-term frequency. By setting it to 0, we get the relative difference (log
+term frequency. By setting it to 0, we simply get the relative
+difference (log
 scaled).
 
-### Rel TF-MRTF (Relative Term Frequency - Maximum Rest Term Frequency)
+### Relative TF-MRTF (Relative Term Frequency - Maximum Rest Term Frequency)
+
+Similar to Relative TF-NRTF but for MRTF
+instead.
 
 <!--$$ rel\_tfMrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfMrtf(t,d,D)}{\log(1 + Mrtf(t,d,D) + \epsilon(t,d,D))} $$-->
 

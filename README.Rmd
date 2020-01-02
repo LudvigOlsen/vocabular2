@@ -184,7 +184,9 @@ TF-RTF is positive when the term frequency is higher in the current document tha
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29-rtf%28t%2Cd%2CD%29)
 
 ### TF-NRTF (Term Frequency - Normalized Rest Term Frequency)
-As our selected TF function ensures that frequencies add up to 1 document-wise, the NRTF (Normalized Rest Term Frequency) is simply the average term frequency in the other documents, instead of the sum as in RTF.
+As our selected TF function ensures that frequencies add up to 1 document-wise, the NRTF (Normalized Rest Term Frequency) is simply the average term frequency in the other documents, instead of the sum as in RTF. 
+
+TF-NRTF is positive when the term frequency is higher in the current document than the average term frequency in the rest of the corpus.
 
 <!--$$ nrtf(t,d,D) = \frac{rtf(t,d,D)}{|D|-1} $$-->
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20nrtf%28t%2Cd%2CD%29%20%3D%20%5Cfrac%7Brtf%28t%2Cd%2CD%29%7D%7B%7CD%7C-1%7D)
@@ -195,13 +197,17 @@ As our selected TF function ensures that frequencies add up to 1 document-wise, 
 ### TF-MRTF (Term Frequency - Maximum Rest Term Frequency)
 Instead of the normalized/average rest term frequency, we instead use the maximum rest term frequency.
 
+TF-MRTF is positive when the term frequency is higher in the current document than the maximum term frequency in the rest of the corpus.
+
 <!--$$ Mrtf(t,d,D) = \max{\{tf(t,d'):d' \in D \land d' \not = d\}} $$-->
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20Mrtf%28t%2Cd%2CD%29%20%3D%20%5Cmax%7B%5C%7Btf%28t%2Cd%27%29%3Ad%27%20%5Cin%20D%20%5Cland%20d%27%20%5Cnot%20%3D%20d%5C%7D%7D)
 
 <!--$$ tfMrtf(t,d,D) = tf(t,d)-Mrtf(t,d,D) $$-->
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfMrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29-Mrtf%28t%2Cd%2CD%29)
 
-### Rel TF-NRTF (Relative Term Frequency - Normalized Rest Term Frequency)
+### Relative TF-NRTF (Relative Term Frequency - Normalized Rest Term Frequency)
+
+Where the TF-NRTF tend to be dominated by highly frequent words, the Relative TF-NRTF instead uses the relative distance to the NRTF. As that would likely be dominated by very infrequent words, we multiply it by the term frequency.
 
 <!--$$ \epsilon(t,d,D) = \frac{1}{\sum_{d' \not = d}^{D}f_{t,d'}} $$-->
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20%5Cepsilon%28t%2Cd%2CD%29%20%3D%20%5Cfrac%7B1%7D%7B%5Csum_%7Bd%27%20%5Cnot%20%3D%20d%7D%5E%7BD%7Df_%7Bt%2Cd%27%7D%7D)
@@ -211,9 +217,11 @@ Instead of the normalized/average rest term frequency, we instead use the maximu
 
 Epsilon (ε) is added to avoid zero-division. It is calculated to resemble +1 smoothing in the rest population. 
 
-The beta (β) exponentiator allows us to control the influence of the term frequency. By setting it to 0, we get the relative difference (log scaled).
+The beta (β) exponentiator allows us to control the influence of the term frequency. By setting it to 0, we simply get the relative difference (log scaled).
 
-### Rel TF-MRTF (Relative Term Frequency - Maximum Rest Term Frequency)
+### Relative TF-MRTF (Relative Term Frequency - Maximum Rest Term Frequency)
+
+Similar to Relative TF-NRTF but for MRTF instead.
 
 <!--$$ rel\_tfMrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfMrtf(t,d,D)}{\log(1 + Mrtf(t,d,D) + \epsilon(t,d,D))} $$-->
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20rel%5C_tfMrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29%5E%7B%5Cbeta%7D%5Cfrac%7BtfMrtf%28t%2Cd%2CD%29%7D%7B%5Clog%281%20&plus;%20Mrtf%28t%2Cd%2CD%29%20&plus;%20%5Cepsilon%28t%2Cd%2CD%29%29%7D)
