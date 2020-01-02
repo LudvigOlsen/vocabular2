@@ -1,8 +1,15 @@
-get_doc_stats <- function(word_scores, doc, remove_zero_counts = TRUE){
+
+#' @title Get the metrics for one of the documents
+#' @param word_scores Scores tibble from \code{compare_vocabs()}.
+#' @param doc Name of document to retrieve metrics for.
+#' @param remove_zero_counts Whether to filter out words
+#'  that were not in the document. (Logical)
+#' @author Ludvig Renbo Olsen, \email{r-pkgs@@ludvigolsen.dk}
+#' @export
+get_doc_metrics <- function(word_scores, doc, remove_zero_counts = TRUE){
 
   cols_to_get <- intersect(colnames(word_scores),
-                           c("Word", "In Docs", "idf", doc,
-                             paste0(doc, "_", c("Count", "Freq", "WeightedFreq"))))
+                           c("Word", "In Docs", "IDF", doc))
 
   # Get relevant columns
   doc_cols <- word_scores %>%

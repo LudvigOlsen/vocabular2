@@ -9,6 +9,7 @@ compare_vocabs(
   word_col = "Word",
   counts_col = "Count",
   weighting_fn = function(x) {     log(x + 1) },
+  calc_weighting_metrics = FALSE,
   rel_tf_nrtf_beta = 1,
   zero_negatives = TRUE
 )
@@ -28,4 +29,6 @@ NOTE: This is experimental. The metrics have not been thought through and some m
 \description{
 Compare vocabularies
 }
-\keyword{internal}
+\author{
+Ludvig Renbo Olsen, \email{r-pkgs@ludvigolsen.dk}
+}

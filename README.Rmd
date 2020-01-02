@@ -9,8 +9,11 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
   fig.path = "man/figures/README-",
+  dpi = 92,
+  fig.retina = 2,
   out.width = "100%"
 )
+
 ```
 
 # vocabular2
@@ -31,13 +34,99 @@ You can install the development version with:
 devtools::install_github("ludvigolsen/vocabular2")
 ```
 
-## Example
+## Simple Example
 
-This is a basic example which shows you how to solve a common problem:
-
-```{r example}
+```{r message=FALSE, warning=FALSE}
 library(vocabular2)
-## basic example code
+library(tm)
+library(tidyverse)
+library(knitr)
+```
+
+```{r}
+txt_1 <- "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec at tincidunt ligula. Suspendisse sed dolor eu libero ultrices dignissim. Sed eget est magna. Quisque molestie a enim ut tristique. Vivamus molestie vehicula augue in maximus. Integer imperdiet ligula at condimentum luctus. Integer facilisis id ex eu dapibus. Quisque maximus ex arcu, quis auctor nisl rhoncus quis. Nulla ultrices libero a ultrices tincidunt. Donec gravida viverra odio, quis posuere est pellentesque quis."
+
+txt_2 <- " Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer pulvinar nibh justo, vel vestibulum velit vulputate a. Vestibulum urna lorem, dapibus at vulputate porttitor, eleifend a turpis. Praesent ultrices quam vitae sollicitudin gravida. Donec eu tincidunt orci. Aliquam placerat ligula at lobortis viverra. Aenean sed ligula tincidunt, volutpat dui id, gravida lacus. Praesent mattis, nibh eu convallis sagittis, tortor erat pretium nulla, nec ullamcorper nisl lorem in arcu. Praesent convallis imperdiet libero, aliquet hendrerit augue gravida eu. Fusce tristique risus quam, vel tincidunt tortor sagittis eu."
+```
+
+```{r warning=FALSE}
+# Create a term-count tibble
+
+count_terms <- function(t){
+  docs <- Corpus(VectorSource(t))
+  # do things like removing stopwords, lemmatization, etc.
+  docs <- tm_map(docs, removeWords, stopwords("english"))
+  dtm <- TermDocumentMatrix(docs)
+  m <- as.matrix(dtm)
+  v <- sort(rowSums(m), decreasing=TRUE)
+  d <- tibble::tibble(Word = names(v), Count=v)
+  d
+}
+
+txt_1_tc <- count_terms(txt_1)
+txt_2_tc <- count_terms(txt_2)
 ```
 
 
+```{r}
+scores <- compare_vocabs(tc_dfs = list("txt_1" = txt_1_tc,
+                                       "txt_2" = txt_2_tc))
+scores
+```
+
+```{r}
+get_doc_metrics(scores, "txt_1") %>% 
+  arrange(desc(REL_TF_NRTF)) %>% 
+  head(10) %>% 
+  kable()
+```
+
+```{r}
+get_doc_metrics(scores, "txt_2") %>% 
+  arrange(desc(REL_TF_NRTF)) %>% 
+  head(10) %>% 
+  kable()
+```
+
+## Metrics
+
+### TF-IDF and TF-IRF (Term Frequency - Inverse Rest Frequency)
+These are highly correlated (>0.999).
+
+$$ tf(t,d)=\frac{f_{t,d}}{\sum_{t'}^{d}f_{t',d}} $$
+$$ idf(t,D)=\log{\frac{|D|}{1+|\{d \in D:t \in d\}|}} $$
+$$ irf(t,d,D)=\log{\frac{|D|-1}{1+|\{d \in D:t \in d \land d' \not = d \}|}} $$
+$$ tfidf(t,d,D) = tf(t,d) \cdot idf(t,D) $$
+$$ tfirf(t,d,D) = tf(t,d) \cdot irf(t,d,D) $$
+
+### TF-RTF (Term Frequency - Rest Term Frequency)
+TF-RTF is positive when the term frequency is higher in the current document than the sum of the term frequencies in the rest of the corpus.
+
+$$ rtf(t,d,D) = \sum_{d' \not = d}^{D}tf(t,d') $$
+$$ tfrtf(t,d,D) = tf(t,d)-rtf(t,d,D) $$
+
+### TF-NRTF (Term Frequency - Normalized Rest Term Frequency)
+As our selected TF function ensures that frequencies add up to 1 document-wise, the NRTF (Normalized Rest Term Frequency) is simply the average term frequency in the other documents, instead of the sum as in RTF.
+
+$$ nrtf(t,d,D) = \frac{rtf(t,d,D)}{|D|-1} $$
+$$ tfnrtf(t,d,D) = tf(t,d)-nrtf(t,d,D) $$
+
+### TF-MRTF (Term Frequency - Maximum Rest Term Frequency)
+Instead of the normalized/average rest term frequency, we instead use the maximum rest term frequency.
+
+$$ Mrtf(t,d,D) = \frac{\max{\{tf(t,d'):d' \in D \land d' \not = d\}}}{|D|-1} $$
+
+$$ tfMrtf(t,d,D) = tf(t,d)-Mrtf(t,d,D) $$
+
+### Rel TF-NRTF (Relative Term Frequency - Normalized Rest Term Frequency)
+
+$$ \epsilon(t,d,D) = \frac{1}{\sum_{d' \not = d}^{D}f_{t,d'}} $$
+
+$$ rel\_tfnrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfnrtf(t,d,D)}{\log(1 + nrtf(t,d,D) + \epsilon(t,d,D))} $$
+Epsilon (ε) is added to avoid zero-division. It is calculated to resemble +1 smoothing in the rest population. 
+
+The beta (β) exponentiator allows us to control the influence of the term frequency. By setting it to 0, we get the relative difference (log scaled).
+
+### Rel TF-MRTF (Relative Term Frequency - Maximum Rest Term Frequency)
+
+$$ rel\_tfMrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfMrtf(t,d,D)}{\log(1 + Mrtf(t,d,D) + \epsilon(t,d,D))} $$

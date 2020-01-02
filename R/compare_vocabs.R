@@ -11,7 +11,8 @@
 #'  The metrics using the weighting function will be named with a "_weighted" suffix.
 #'
 #'  NOTE: This is experimental. The metrics have not been thought through and some may not be meaningful.
-#' @keywords internal
+#' @author Ludvig Renbo Olsen, \email{r-pkgs@@ludvigolsen.dk}
+#' @export
 #' @importFrom dplyr %>%
 #' @import data.table
 compare_vocabs <- function(tc_dfs,
@@ -133,11 +134,22 @@ compare_vocabs <- function(tc_dfs,
 
   # Rename columns
   counts <- add_colnames_suffix(counts, "_Count")
-  freqs <- add_colnames_suffix(freqs, "_Freq")
+  freqs <- add_colnames_suffix(freqs, "_TF")
+
   if (isTRUE(calc_weighting_metrics)){
     weighted_freqs <- add_colnames_suffix(weighted_freqs, "_WeightedFreq")
+
+    # Add counts and frequencies to metrics
+    metrics <- metrics %>%
+      dplyr::bind_cols(counts, freqs, weighted_freqs)
+
   } else {
     weighted_freqs <- NULL
+
+    # Add counts and frequencies to metrics
+    metrics <- metrics %>%
+      dplyr::bind_cols(counts, freqs)
+
   }
 
   # Nest metrics by condition
@@ -153,10 +165,7 @@ compare_vocabs <- function(tc_dfs,
     words,
     doc_counts[["counts"]],
     idf,
-    nested_metrics,
-    counts,
-    freqs,
-    weighted_freqs
+    nested_metrics
   )
 
 }

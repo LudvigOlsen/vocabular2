@@ -114,7 +114,7 @@ calculate_metrics <- function(counts,
     beta = rel_tf_nrtf_beta)
 
   # Term frequency * log inverse document frequency
-  tf_idf_scores <- dplyr::mutate_all(freqs, list(function(x){x * idf[["idf"]]}))
+  tf_idf_scores <- dplyr::mutate_all(freqs, list(function(x){x * idf[["IDF"]]}))
 
   # Term frequency * log inverse rest frequency
   tf_irf_scores <- freqs * irf
@@ -168,7 +168,7 @@ calculate_metrics <- function(counts,
   }
 
   # Add the IDF tibble
-  output[["idf"]] <- idf
+  output[["IDF"]] <- idf
 
   output
 
@@ -185,7 +185,7 @@ calculate_idf <- function(n_docs, doc_count, keep_col_names = FALSE){
 
   # Rename to idf
   if (!isTRUE(keep_col_names)){
-    colnames(idf) <- "idf"
+    colnames(idf) <- "IDF"
   }
 
   idf
