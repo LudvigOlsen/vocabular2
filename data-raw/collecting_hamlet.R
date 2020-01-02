@@ -4,12 +4,12 @@ files_path <- "./inst/hamlet/"
 paths <- list.files(files_path)
 hamlet <- plyr::ldply(paths, function(p){
   d <- read.csv(paste0(files_path, p), stringsAsFactors = FALSE, sep="\t", header = FALSE)
-  colnames(d) <- "lines"
-  d[["character"]] <- p
+  colnames(d) <- "Line"
+  d[["Character"]] <- p
   d
 }) %>% dplyr::as_tibble() %>%
-  dplyr::mutate(character = stringr::str_replace_all(character, ".csv", ""),
-                character = tools::toTitleCase(character)) %>%
-  dplyr::filter(stringr::str_detect(lines, stringr::fixed("["), negate=TRUE))
+  dplyr::mutate(Character = stringr::str_replace_all(Character, ".csv", ""),
+                Character = tools::toTitleCase(Character)) %>%
+  dplyr::filter(stringr::str_detect(Line, stringr::fixed("["), negate=TRUE))
 
-usethis::use_data(hamlet)
+# usethis::use_data(hamlet, overwrite = TRUE)

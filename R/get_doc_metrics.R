@@ -1,5 +1,6 @@
 
 #' @title Get the metrics for one of the documents
+#' @description Extracts the nested columns for one of the documents.
 #' @param word_scores Scores tibble from \code{compare_vocabs()}.
 #' @param doc Name of document to retrieve metrics for.
 #' @param remove_zero_counts Whether to filter out words

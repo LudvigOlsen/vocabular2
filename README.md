@@ -13,7 +13,9 @@ experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](h
 The goal of vocabular2 is to compare vocabularies on a set of metrics.
 There’s currently no clear development path for the package. It may
 become usable in the future, but for now it’s not adviced to use the
-code for your projects.
+code for your projects. I haven’t spent enough time thinking about the
+meaningfulness of the metrics to recommend them. They were simply
+intuitive to me at 4am on some exam-stressed winter night. :)
 
 ## Installation
 
@@ -28,6 +30,10 @@ devtools::install_github("ludvigolsen/vocabular2")
 Note: By default, negative values are set to 0 for most of the metrics
 (not TD-IDF and TF-IRF).
 
+See the metric formulas below the example.
+
+### Attach packages
+
 ``` r
 library(vocabular2)
 library(tm)
@@ -35,20 +41,49 @@ library(tidyverse)
 library(knitr)
 ```
 
-``` r
-data <- hamlet %>% 
-  dplyr::group_by(character) %>% 
-  dplyr::summarise(txt = paste0(lines, collapse = " "))
+### Load the included ‘hamlet’ dataset
 
+``` r
+# The included dataset with Hamlet lines
+# Extracted from https://www.opensourceshakespeare.org/
+hamlet %>% head(5)
+#> # A tibble: 5 x 2
+#>   Line                                              Character
+#>   <chr>                                             <chr>    
+#> 1 Though yet of Hamlet our dear brother's death     Claudius 
+#> 2 The memory be green, and that it us befitted...   Claudius 
+#> 3 We doubt it nothing. Heartily farewell.           Claudius 
+#> 4 Have you your father's leave? What says Polonius? Claudius 
+#> 5 Take thy fair hour, Laertes. Time be thine,       Claudius
+
+# Collect the lines for each character
+data <- hamlet %>% 
+  dplyr::group_by(Character) %>% 
+  dplyr::summarise(txt = paste0(Line, collapse = " "))
+
+data
+#> # A tibble: 5 x 2
+#>   Character txt                                                                 
+#>   <chr>     <chr>                                                               
+#> 1 Claudius  Though yet of Hamlet our dear brother's death The memory be green, …
+#> 2 Gertrude  Good Hamlet, cast thy nighted colour off, And let thine eye look li…
+#> 3 Hamlet    Not so, my lord. I am too much i' th' sun. Ay, madam, it is common.…
+#> 4 Horatio   Friends to this ground. A piece of him. Tush, tush, 'twill not appe…
+#> 5 Ophelia   Do you doubt that? No more but so? I shall th' effect of this good …
+
+# Assign each text to a variable
+# This could be done in a loop if we had a lot of texts
 claudius <- data[1, "txt"][[1]]
 gertrude <- data[2, "txt"][[1]]
-hamlet <- data[3, "txt"][[1]]
+hamlet <- data[3, "txt"][[1]] # note: overwrites the dataset
 horatio <- data[4, "txt"][[1]]
 ophelia <- data[5, "txt"][[1]]
 ```
 
+### Count the terms
+
 ``` r
-# Create a term-count tibble
+# Create a term-count tibble for each document
 
 count_terms <- function(t){
   docs <- Corpus(VectorSource(t))
@@ -68,6 +103,11 @@ hamlet_tc <- count_terms(hamlet)
 horatio_tc <- count_terms(horatio)
 ophelia_tc <- count_terms(ophelia)
 ```
+
+### Compare the vocabularies
+
+This is where the metrics are calculated. We get a column per document
+with a nested tibble containing the metrics.
 
 ``` r
 scores <- compare_vocabs(tc_dfs = list("claudius" = claudius_tc,
@@ -92,6 +132,8 @@ scores
 #> # … with 877 more rows
 ```
 
+### Extract the metrics for Claudius
+
 ``` r
 get_doc_metrics(scores, "claudius") %>% 
   arrange(desc(REL_TF_NRTF)) %>% 
@@ -111,6 +153,8 @@ get_doc_metrics(scores, "claudius") %>%
 | claudius | father   |       4 |     6 | 0.0113208 | 0.0000000 | 0.0081824 | 0.0020456 | 0.0029940 | 0.0000000 | 0.0000000 | 0.0031384 | 0.0092752 | 0.0083267 |     0.0381682 |     0.0255019 |     697.0 |
 | claudius | thine    |       2 |     4 | 0.0075472 | 0.6931472 | 0.0029940 | 0.0007485 | 0.0029940 | 0.0038553 | 0.0052313 | 0.0045532 | 0.0067987 | 0.0045532 |     0.0352249 |     0.0092965 |     881.0 |
 | claudius | must     |       3 |     6 | 0.0113208 | 0.2876821 | 0.0091200 | 0.0022800 | 0.0068729 | 0.0025262 | 0.0032568 | 0.0022007 | 0.0090407 | 0.0044479 |     0.0342901 |     0.0066663 |     880.0 |
+
+### Extract the metrics for Gertrude
 
 ``` r
 get_doc_metrics(scores, "gertrude") %>% 
@@ -132,6 +176,8 @@ get_doc_metrics(scores, "gertrude") %>%
 | gertrude | forgot  |       1 |     2 | 0.0059880 | 1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 | 0.0054868 | 0.0083012 | 0.0059880 | 0.0059880 | 0.0059880 |     0.0576034 |     0.0576034 |     881.0 |
 | gertrude | noise   |       1 |     2 | 0.0059880 | 1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 | 0.0054868 | 0.0083012 | 0.0059880 | 0.0059880 | 0.0059880 |     0.0576034 |     0.0576034 |     881.0 |
 
+### Extract the metrics for Hamlet
+
 ``` r
 get_doc_metrics(scores, "hamlet") %>% 
   arrange(desc(REL_TF_NRTF)) %>% 
@@ -152,6 +198,8 @@ get_doc_metrics(scores, "hamlet") %>%
 | hamlet | make     |       2 |     3 | 0.0088235 | 0.6931472 | 0.0034364 | 0.0008591 | 0.0034364 | 0.0045073 | 0.0061160 | 0.0053871 | 0.0079644 | 0.0053871 |     0.0473864 |     0.0117273 |       878 |
 | hamlet | sword    |       2 |     3 | 0.0088235 | 0.6931472 | 0.0034364 | 0.0008591 | 0.0034364 | 0.0045073 | 0.0061160 | 0.0053871 | 0.0079644 | 0.0053871 |     0.0473864 |     0.0117273 |       878 |
 
+### Extract the metrics for Horatio
+
 ``` r
 get_doc_metrics(scores, "horatio") %>% 
   arrange(desc(REL_TF_NRTF)) %>% 
@@ -171,6 +219,8 @@ get_doc_metrics(scores, "horatio") %>%
 | horatio | een      |       1 |     2 | 0.0044944 |   1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 |   0.0041182 |   0.0062305 | 0.0044944 | 0.0044944 | 0.0044944 |     0.0302083 |     0.0302083 |       879 |
 | horatio | issue    |       1 |     2 | 0.0044944 |   1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 |   0.0041182 |   0.0062305 | 0.0044944 | 0.0044944 | 0.0044944 |     0.0302083 |     0.0302083 |       879 |
 | horatio | most     |       1 |     2 | 0.0044944 |   1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 |   0.0041182 |   0.0062305 | 0.0044944 | 0.0044944 | 0.0044944 |     0.0302083 |     0.0302083 |       879 |
+
+### Extract the metrics for Ophelia
 
 ``` r
 get_doc_metrics(scores, "ophelia") %>% 
@@ -196,28 +246,45 @@ get_doc_metrics(scores, "ophelia") %>%
 
 ### TF-IDF and TF-IRF (Term Frequency - Inverse Rest Frequency)
 
-These are highly correlated
-(\>0.999).
+These are highly correlated (\>0.999).
+
+<!-- We will only see the equations in GitHub.
+Get the url at
+https://www.codecogs.com/latex/eqneditor.php-->
 
 <!--$$ tf(t,d)=\frac{f_{t,d}}{\sum_{t'}^{d}f_{t',d}} $$-->
 
-![equation](https://latex.codecogs.com/png.latex?%5Cdpi%7B120%7D%20%5Csmall%20tf%28t%2Cd%29%3D%5Cfrac%7Bf_%7Bt%2Cd%7D%7D%7B%5Csum_%7Bt%27%7D%5E%7Bd%7Df_%7Bt%27%2Cd%7D%7D)
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tf%28t%2Cd%29%3D%5Cfrac%7Bf_%7Bt%2Cd%7D%7D%7B%5Csum_%7Bt%27%7D%5E%7Bd%7Df_%7Bt%27%2Cd%7D%7D)
 
 <!--$$ idf(t,D)=\log{\frac{|D|}{1+|\{d \in D:t \in d\}|}} $$-->
 
 ![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20idf%28t%2CD%29%3D%5Clog%7B%5Cfrac%7B%7CD%7C%7D%7B1+%7C%7Bd%20%5Cin%20D%3At%20%5Cin%20d%7D%7C%7D%7D)
 
-\[ irf(t,d,D)=\log{\frac{|D|-1}{1+|\{d \in D:t \in d \land d' \not = d \}|}} \]
-\[ tfidf(t,d,D) = tf(t,d) \cdot idf(t,D) \]
-\[ tfirf(t,d,D) = tf(t,d) \cdot irf(t,d,D) \]
+<!--$$ irf(t,d,D)=\log{\frac{|D|-1}{1+|\{d \in D:t \in d \land d' \not = d \}|}} $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20irf%28t%2Cd%2CD%29%3D%5Clog%7B%5Cfrac%7B%7CD%7C-1%7D%7B1+%7C%5C%7Bd%20%5Cin%20D%3At%20%5Cin%20d%20%5Cland%20d%27%20%5Cnot%20%3D%20d%20%5C%7D%7C%7D%7D)
+
+<!--$$ tfidf(t,d,D) = tf(t,d) \cdot idf(t,D) $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfidf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29%20%5Ccdot%20idf%28t%2CD%29)
+
+<!--$$ tfirf(t,d,D) = tf(t,d) \cdot irf(t,d,D) $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfirf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29%20%5Ccdot%20irf%28t%2Cd%2CD%29)
 
 ### TF-RTF (Term Frequency - Rest Term Frequency)
 
 TF-RTF is positive when the term frequency is higher in the current
-document than the sum of the term frequencies in the rest of the corpus.
+document than the sum of the term frequencies in the rest of the
+corpus.
 
-\[ rtf(t,d,D) = \sum_{d' \not = d}^{D}tf(t,d') \]
-\[ tfrtf(t,d,D) = tf(t,d)-rtf(t,d,D) \]
+<!--$$ rtf(t,d,D) = \sum_{d' \not = d}^{D}tf(t,d') $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20rtf%28t%2Cd%2CD%29%20%3D%20%5Csum_%7Bd%27%20%5Cnot%20%3D%20d%7D%5E%7BD%7Dtf%28t%2Cd%27%29)
+
+<!--$$ tfrtf(t,d,D) = tf(t,d)-rtf(t,d,D) $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29-rtf%28t%2Cd%2CD%29)
 
 ### TF-NRTF (Term Frequency - Normalized Rest Term Frequency)
 
@@ -226,8 +293,13 @@ document-wise, the NRTF (Normalized Rest Term Frequency) is simply the
 average term frequency in the other documents, instead of the sum as in
 RTF.
 
-\[ nrtf(t,d,D) = \frac{rtf(t,d,D)}{|D|-1} \]
-\[ tfnrtf(t,d,D) = tf(t,d)-nrtf(t,d,D) \]
+<!--$$ nrtf(t,d,D) = \frac{rtf(t,d,D)}{|D|-1} $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20nrtf%28t%2Cd%2CD%29%20%3D%20%5Cfrac%7Brtf%28t%2Cd%2CD%29%7D%7B%7CD%7C-1%7D)
+
+<!--$$ tfnrtf(t,d,D) = tf(t,d)-nrtf(t,d,D) $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfnrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29-nrtf%28t%2Cd%2CD%29)
 
 ### TF-MRTF (Term Frequency - Maximum Rest Term Frequency)
 
@@ -235,15 +307,24 @@ Instead of the normalized/average rest term frequency, we instead use
 the maximum rest term
 frequency.
 
-\[ Mrtf(t,d,D) = \frac{\max{\{tf(t,d'):d' \in D \land d' \not = d\}}}{|D|-1} \]
+<!--$$ Mrtf(t,d,D) = \max{\{tf(t,d'):d' \in D \land d' \not = d\}} $$-->
 
-\[ tfMrtf(t,d,D) = tf(t,d)-Mrtf(t,d,D) \]
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20Mrtf%28t%2Cd%2CD%29%20%3D%20%5Cmax%7B%5C%7Btf%28t%2Cd%27%29%3Ad%27%20%5Cin%20D%20%5Cland%20d%27%20%5Cnot%20%3D%20d%5C%7D%7D)
+
+<!--$$ tfMrtf(t,d,D) = tf(t,d)-Mrtf(t,d,D) $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20tfMrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29-Mrtf%28t%2Cd%2CD%29)
 
 ### Rel TF-NRTF (Relative Term Frequency - Normalized Rest Term Frequency)
 
-\[ \epsilon(t,d,D) = \frac{1}{\sum_{d' \not = d}^{D}f_{t,d'}} \]
+<!--$$ \epsilon(t,d,D) = \frac{1}{\sum_{d' \not = d}^{D}f_{t,d'}} $$-->
 
-\[ rel\_tfnrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfnrtf(t,d,D)}{\log(1 + nrtf(t,d,D) + \epsilon(t,d,D))} \]
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20%5Cepsilon%28t%2Cd%2CD%29%20%3D%20%5Cfrac%7B1%7D%7B%5Csum_%7Bd%27%20%5Cnot%20%3D%20d%7D%5E%7BD%7Df_%7Bt%2Cd%27%7D%7D)
+
+<!--$$ rel\_tfnrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfnrtf(t,d,D)}{\log(1 + nrtf(t,d,D) + \epsilon(t,d,D))} $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20rel%5C_tfnrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29%5E%7B%5Cbeta%7D%5Cfrac%7Btfnrtf%28t%2Cd%2CD%29%7D%7B%5Clog%281%20+%20nrtf%28t%2Cd%2CD%29%20+%20%5Cepsilon%28t%2Cd%2CD%29%29%7D)
+
 Epsilon (ε) is added to avoid zero-division. It is calculated to
 resemble +1 smoothing in the rest population.
 
@@ -253,4 +334,6 @@ scaled).
 
 ### Rel TF-MRTF (Relative Term Frequency - Maximum Rest Term Frequency)
 
-\[ rel\_tfMrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfMrtf(t,d,D)}{\log(1 + Mrtf(t,d,D) + \epsilon(t,d,D))} \]
+<!--$$ rel\_tfMrtf(t,d,D) = tf(t,d)^{\beta}\frac{tfMrtf(t,d,D)}{\log(1 + Mrtf(t,d,D) + \epsilon(t,d,D))} $$-->
+
+![equation](https://latex.codecogs.com/svg.latex?%5Cdpi%7B300%7D%20%5Cfn_cm%20rel%5C_tfMrtf%28t%2Cd%2CD%29%20%3D%20tf%28t%2Cd%29%5E%7B%5Cbeta%7D%5Cfrac%7BtfMrtf%28t%2Cd%2CD%29%7D%7B%5Clog%281%20+%20Mrtf%28t%2Cd%2CD%29%20+%20%5Cepsilon%28t%2Cd%2CD%29%29%7D)
