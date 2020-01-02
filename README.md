@@ -15,7 +15,8 @@ There’s currently no clear development path for the package. It may
 become usable in the future, but for now it’s not adviced to use the
 code for your projects. I haven’t spent enough time thinking about the
 meaningfulness of the metrics to recommend them. They were simply
-intuitive to me at 4am on some exam-stressed winter night. :)
+intuitive to me at 4am on some exam-stressed winter night. It’s also
+very possible that they are in the literature under different names. :)
 
 ## Installation
 
