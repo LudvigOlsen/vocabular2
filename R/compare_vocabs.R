@@ -152,10 +152,19 @@ compare_vocabs <- function(tc_dfs,
 
   }
 
+  metric_names <- plyr::llply(conditions, function(cond){
+    paste0(cond, "_", c(
+    "Count", "TF", "IRF", "RTF", "NRTF", "MRTF", "TF_IDF", "TF_IRF",
+    "TF_RTF", "TF_NRTF", "TF_MRTF", "REL_TF_NRTF", "REL_TF_MRTF", "RANK_ENS"
+  ))}) %>% unlist()
+
+  # Reorder
+  metrics <- base_select(metrics, cols = metric_names)
+
   # Nest metrics by condition
   nested_metrics <- plyr::llply(conditions, function(cond){
     metrics %>%
-      base_select(cols = grepl(cond, colnames(metrics))) %>%
+      base_select(cols = grepl(cond, metric_names)) %>%
       nest_rowwise() %>%
       tibble::enframe(name=NULL, value=cond)
   }) %>% dplyr::bind_cols()

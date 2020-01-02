@@ -36,6 +36,8 @@ devtools::install_github("ludvigolsen/vocabular2")
 
 ## Simple Example
 
+Note: By default, negative values are set to 0 for most of the metrics (not TD-IDF and TF-IRF).
+
 ```{r message=FALSE, warning=FALSE}
 library(vocabular2)
 library(tm)
@@ -44,9 +46,16 @@ library(knitr)
 ```
 
 ```{r}
-txt_1 <- "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec at tincidunt ligula. Suspendisse sed dolor eu libero ultrices dignissim. Sed eget est magna. Quisque molestie a enim ut tristique. Vivamus molestie vehicula augue in maximus. Integer imperdiet ligula at condimentum luctus. Integer facilisis id ex eu dapibus. Quisque maximus ex arcu, quis auctor nisl rhoncus quis. Nulla ultrices libero a ultrices tincidunt. Donec gravida viverra odio, quis posuere est pellentesque quis."
+data <- hamlet %>% 
+  dplyr::group_by(character) %>% 
+  dplyr::summarise(txt = paste0(lines, collapse = " "))
 
-txt_2 <- " Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer pulvinar nibh justo, vel vestibulum velit vulputate a. Vestibulum urna lorem, dapibus at vulputate porttitor, eleifend a turpis. Praesent ultrices quam vitae sollicitudin gravida. Donec eu tincidunt orci. Aliquam placerat ligula at lobortis viverra. Aenean sed ligula tincidunt, volutpat dui id, gravida lacus. Praesent mattis, nibh eu convallis sagittis, tortor erat pretium nulla, nec ullamcorper nisl lorem in arcu. Praesent convallis imperdiet libero, aliquet hendrerit augue gravida eu. Fusce tristique risus quam, vel tincidunt tortor sagittis eu."
+claudius <- data[1, "txt"][[1]]
+gertrude <- data[2, "txt"][[1]]
+hamlet <- data[3, "txt"][[1]]
+horatio <- data[4, "txt"][[1]]
+ophelia <- data[5, "txt"][[1]]
+
 ```
 
 ```{r warning=FALSE}
@@ -56,6 +65,7 @@ count_terms <- function(t){
   docs <- Corpus(VectorSource(t))
   # do things like removing stopwords, lemmatization, etc.
   docs <- tm_map(docs, removeWords, stopwords("english"))
+  docs <- tm_map(docs, removePunctuation, preserve_intra_word_dashes = TRUE)
   dtm <- TermDocumentMatrix(docs)
   m <- as.matrix(dtm)
   v <- sort(rowSums(m), decreasing=TRUE)
@@ -63,26 +73,53 @@ count_terms <- function(t){
   d
 }
 
-txt_1_tc <- count_terms(txt_1)
-txt_2_tc <- count_terms(txt_2)
+claudius_tc <- count_terms(claudius)
+gertrude_tc <- count_terms(gertrude)
+hamlet_tc <- count_terms(hamlet)
+horatio_tc <- count_terms(horatio)
+ophelia_tc <- count_terms(ophelia)
 ```
 
 
 ```{r}
-scores <- compare_vocabs(tc_dfs = list("txt_1" = txt_1_tc,
-                                       "txt_2" = txt_2_tc))
+scores <- compare_vocabs(tc_dfs = list("claudius" = claudius_tc,
+                                       "gertrude" = gertrude_tc,
+                                       "hamlet" = hamlet_tc,
+                                       "horatio" = horatio_tc,
+                                       "ophelia" = ophelia_tc))
 scores
 ```
 
 ```{r}
-get_doc_metrics(scores, "txt_1") %>% 
+get_doc_metrics(scores, "claudius") %>% 
   arrange(desc(REL_TF_NRTF)) %>% 
   head(10) %>% 
   kable()
 ```
 
 ```{r}
-get_doc_metrics(scores, "txt_2") %>% 
+get_doc_metrics(scores, "gertrude") %>% 
+  arrange(desc(REL_TF_NRTF)) %>% 
+  head(10) %>% 
+  kable()
+```
+
+```{r}
+get_doc_metrics(scores, "hamlet") %>% 
+  arrange(desc(REL_TF_NRTF)) %>% 
+  head(10) %>% 
+  kable()
+```
+
+```{r}
+get_doc_metrics(scores, "horatio") %>% 
+  arrange(desc(REL_TF_NRTF)) %>% 
+  head(10) %>% 
+  kable()
+```
+
+```{r}
+get_doc_metrics(scores, "ophelia") %>% 
   arrange(desc(REL_TF_NRTF)) %>% 
   head(10) %>% 
   kable()

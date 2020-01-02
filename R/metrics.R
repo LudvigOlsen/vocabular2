@@ -51,14 +51,14 @@ calculate_metrics <- function(counts,
 
   # For each condition, compute the
   # row sum of the other conditions
-  sum_rest <- sum_rest_populations(freqs)
+  rtf <- sum_rest_populations(freqs)
 
   # Normalize row sums
   # As each column sums to one, the row sums will sum to the number of columns in "rest"
-  normalized_rest <- sum_rest / (ncol(freqs)-1)
+  nrtf <- rtf / (ncol(freqs)-1)
 
   # Max row frequency in rest
-  max_rest <- max_rest_populations(freqs)
+  mrtf <- max_rest_populations(freqs)
 
   ## Inverse Document Frequencies
   idf <- calculate_idf(n_docs, doc_counts)
@@ -69,9 +69,9 @@ calculate_metrics <- function(counts,
   # Ensure column orders are the same
   # (they should already be so, but this is vital when we subtract the two dfs)
   freqs <- ensure_col_order(freqs, doc_names)
-  sum_rest <- ensure_col_order(sum_rest, doc_names)
-  normalized_rest <- ensure_col_order(normalized_rest, doc_names)
-  max_rest <- ensure_col_order(max_rest, doc_names)
+  rtf <- ensure_col_order(rtf, doc_names)
+  nrtf <- ensure_col_order(nrtf, doc_names)
+  mrtf <- ensure_col_order(mrtf, doc_names)
   irf <- ensure_col_order(irf, doc_names)
 
   #### Calculate metrics ####
@@ -79,17 +79,17 @@ calculate_metrics <- function(counts,
   # Subtract the population sum freqs from the condition freqs
   # This will be positive if the normalized term frequency is larger
   # than the sum of the normalized term frequency in all other conditions
-  tf_rtf_scores <- freqs - sum_rest
+  tf_rtf_scores <- freqs - rtf
 
   # Subtract the population normalized freqs from the condition freqs
   # This will be positive if the term frequency is larger
   # than the mean of the term frequency in all other conditions
-  tf_nrtf_scores <- freqs - normalized_rest
+  tf_nrtf_scores <- freqs - nrtf
 
   # Subtract the population max freqs from the condition freqs
   # This will be positive if the term frequency is larger
   # than the maximum term frequency in all other conditions
-  tf_mrtf_scores <- freqs - max_rest
+  tf_mrtf_scores <- freqs - mrtf
 
   # Divide the tf_nrtf (difference between freqs and normalized rest freqs)
   # with the normalized rest freqs
@@ -97,7 +97,7 @@ calculate_metrics <- function(counts,
   rel_tf_nrtf_scores <- calculate_relative_score(
     freqs = freqs,
     difference = tf_nrtf_scores,
-    population = normalized_rest,
+    population = nrtf,
     epsilons = epsilons,
     log_denominator = TRUE,
     beta = rel_tf_nrtf_beta)
@@ -108,7 +108,7 @@ calculate_metrics <- function(counts,
   rel_tf_mrtf_scores <- calculate_relative_score(
     freqs = freqs,
     difference = tf_mrtf_scores,
-    population = max_rest,
+    population = mrtf,
     epsilons = epsilons,
     log_denominator = TRUE,
     beta = rel_tf_nrtf_beta)
@@ -134,6 +134,9 @@ calculate_metrics <- function(counts,
 
   # Metrics that we might want to zero negatives in
   output <- list(
+    "rtf" = add_colnames_suffix(rtf, "_RTF"),
+    "nrtf" = add_colnames_suffix(nrtf, "_NRTF"),
+    "mrtf" = add_colnames_suffix(mrtf, "_MRTF"),
     "tf_rtf" = add_colnames_suffix(tf_rtf_scores, "_TF_RTF"),
     "tf_nrtf" = add_colnames_suffix(tf_nrtf_scores, "_TF_NRTF"),
     "tf_mrtf" = add_colnames_suffix(tf_mrtf_scores, "_TF_MRTF"),
@@ -209,11 +212,11 @@ calculate_rank <- function(scores){
 # If a word is only in one document, we want to reward that
 # but it shouldn't drown the impact of the term frequency
 # One of two formulas, depending on 'log_denominator'
-#   formula 1: (tf_nrtf / log(1 + normalized_rest + epsilon)) * (freqs^beta)
-#   formula 2: (tf_nrtf / (normalized_rest + epsilon)) * (freqs^beta)
+#   formula 1: (tf_nrtf / log(1 + nrtf + epsilon)) * (freqs^beta)
+#   formula 2: (tf_nrtf / (nrtf + epsilon)) * (freqs^beta)
 # Set beta to 0 to not multiply by freqs
 # @param difference: like tf_nrtf (difference from population mean/max/...)
-# @param population: like normalized_rest (population mean/max/...)
+# @param population: like nrtf (population mean/max/...)
 calculate_relative_score <- function(freqs,
                                      difference,
                                      population,
@@ -228,15 +231,14 @@ calculate_relative_score <- function(freqs,
   # Ensure it's capped at 1
   population[population > 1] <- 1
 
-  # Both difference and normalized_rest are between 0 and 1
+  # Both difference and population are between 0 and 1
 
   # Find relative difference between
   # difference and the normalized rest
   if (isTRUE(log_denominator)){
     rel <- difference / log(1 + population)
-    # rel <- safe_division(difference, log(1 + population), na_fill = 0)
   } else {
-    rel <- safe_division(difference, population, na_fill = 0)
+    rel <- difference / population
   }
 
   rel*(freqs^beta)
