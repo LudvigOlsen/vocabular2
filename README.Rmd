@@ -35,6 +35,12 @@ You can install the development version with:
 devtools::install_github("ludvigolsen/vocabular2")
 ```
 
+## Main functions
+
+* `compare_vocabs()`
+* `get_doc_metrics()`
+* `stack_doc_metrics()`
+
 ## Simple Example
 
 Note: By default, negative values are set to 0 for most of the metrics (not TD-IDF and TF-IRF). 
@@ -148,6 +154,12 @@ get_doc_metrics(scores, "ophelia") %>%
   arrange(desc(REL_TF_NRTF)) %>% 
   head(10) %>% 
   kable()
+```
+
+### Extract and stack metrics for all documents
+
+```{r}
+stack_doc_metrics(scores)
 ```
 
 ## Metrics

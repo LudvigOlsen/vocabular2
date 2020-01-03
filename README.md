@@ -26,6 +26,12 @@ You can install the development version with:
 devtools::install_github("ludvigolsen/vocabular2")
 ```
 
+## Main functions
+
+  - `compare_vocabs()`
+  - `get_doc_metrics()`
+  - `stack_doc_metrics()`
+
 ## Simple Example
 
 Note: By default, negative values are set to 0 for most of the metrics
@@ -242,6 +248,28 @@ get_doc_metrics(scores, "ophelia") %>%
 | ophelia | naught |       1 |     2 | 0.0068729 |   1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 |   0.0062975 |   0.0095278 | 0.0068729 | 0.0068729 | 0.0068729 |     0.0779159 |     0.0779159 |       883 |
 | ophelia | show   |       1 |     2 | 0.0068729 |   1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 |   0.0062975 |   0.0095278 | 0.0068729 | 0.0068729 | 0.0068729 |     0.0779159 |     0.0779159 |       883 |
 | ophelia | sings  |       1 |     2 | 0.0068729 |   1.3862944 | 0.0000000 | 0.0000000 | 0.0000000 |   0.0062975 |   0.0095278 | 0.0068729 | 0.0068729 | 0.0068729 |     0.0779159 |     0.0779159 |       883 |
+
+### Extract and stack metrics for all documents
+
+``` r
+stack_doc_metrics(scores)
+#> # A tibble: 1,294 x 17
+#>    Doc   Word  `In Docs` Count      TF    IRF     RTF    NRTF    MRTF   TF_IDF
+#>    <chr> <chr>     <dbl> <dbl>   <dbl>  <dbl>   <dbl>   <dbl>   <dbl>    <dbl>
+#>  1 clau… aboa…         1     1 0.00189  1.39  0       0.      0        1.73e-3
+#>  2 clau… acqu…         1     1 0.00189  1.39  0       0.      0        1.73e-3
+#>  3 clau… affe…         1     1 0.00189  1.39  0       0.      0        1.73e-3
+#>  4 clau… alas          3     2 0.00377  0.288 0.0149  3.73e-3 0.0120   8.42e-4
+#>  5 clau… alone         2     1 0.00189  0.693 0.00294 7.35e-4 0.00294  9.64e-4
+#>  6 clau… and           5     7 0.0132  -0.223 0.0663  1.66e-2 0.0180  -2.41e-3
+#>  7 clau… answ…         3     1 0.00189  0.288 0.00524 1.31e-3 0.00299  4.21e-4
+#>  8 clau… apart         2     1 0.00189  0.693 0.00299 7.49e-4 0.00299  9.64e-4
+#>  9 clau… argu…         2     1 0.00189  0.693 0.00344 8.59e-4 0.00344  9.64e-4
+#> 10 clau… arm           2     1 0.00189  0.693 0.00344 8.59e-4 0.00344  9.64e-4
+#> # … with 1,284 more rows, and 7 more variables: TF_IRF <dbl>, TF_RTF <dbl>,
+#> #   TF_NRTF <dbl>, TF_MRTF <dbl>, REL_TF_NRTF <dbl>, REL_TF_MRTF <dbl>,
+#> #   RANK_ENS <dbl>
+```
 
 ## Metrics
 

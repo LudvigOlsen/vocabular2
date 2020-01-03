@@ -2,6 +2,7 @@
 
 export(compare_vocabs)
 export(get_doc_metrics)
+export(stack_doc_metrics)
 import(data.table)
 importFrom(dplyr,"%>%")
 importFrom(utils,data)
